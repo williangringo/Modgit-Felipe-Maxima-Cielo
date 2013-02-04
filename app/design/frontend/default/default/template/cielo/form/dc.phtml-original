@@ -1,0 +1,178 @@
+<?php
+
+/*
+ * Maxima Cielo Module - payment method module for Magento, integrating
+ * the billing forms with a Cielo's gateway Web Service.
+ * Copyright (C) 2012  Fillipe Almeida Dutra
+ * Belo Horizonte, Minas Gerais - Brazil
+ * 
+ * Contact: lawsann@gmail.com
+ * Project link: http://code.google.com/p/magento-maxima-cielo/
+ * Group discussion: http://groups.google.com/group/cielo-magento
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+?>
+<fieldset class="form-list">
+	<ul id="payment_form_Maxima_Cielo_Dc" style="display:none;">
+		<br />
+<?php
+	
+	$cardsData = $this->getAllowedCards();
+	
+	$size = count($cardsData);
+	
+	for($i = 0; $i < $size; $i++)
+	{
+		$value = $cardsData[$i]['value'];
+		$label = $cardsData[$i]['label'];
+		$img = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN) . "frontend/default/default/images/cielo/" . $cardsData[$i]['image'];
+		
+		// abre agrupamento de bandeiras
+		if($i % 3 == 0)
+		{
+?>
+		<li class="first">
+		<ul class="card-logo">
+<?php
+		}
+		
+		// bandeira em questao
+?>
+			<li style="width: 70px; float: left;">
+				<label for="card-<?php echo $value; ?>"><img src="<?php echo $img; ?>" style="width: 40px;" title="<?php echo $label; ?>" /><br>
+					<input name="payment[cc_type]" type="radio" value="<?php echo $value; ?>" id="card-<?php echo $value; ?>" 
+						   class="validate-one-required-by-name" onclick="cleanDcForm('<?php echo $value; ?>');" />
+				</label>
+			</li>
+<?php
+		// fecha agrupamento de bandeiras
+		if(($i == $size - 1))
+		{
+?>
+		</ul>
+		</li>
+<?php
+		}
+	}
+	
+	// dados do cartao
+	// somente mostrado em buy page loja
+	
+	if($this->getConfigData('buypage') == "loja")
+	{
+?>
+		<li>
+			<label for="cielo-dc-card-number" class="required"><em>*</em><?php echo $this->__('Card Number') ?></label><br />
+			<div class="input-box">
+				<input name="payment[cc_number]" type="text" value="" id="cielo-dc-card-number" 
+					   title="<?php echo $this->__('Card Number') ?>" class="input-text required-entry validate-cc-number" 
+					   maxlength="16" onkeydown="return denyNotNumberDc(this, event);" autocomplete="off" />
+			</div>
+		</li>
+		<li>
+			<label for="cielo-dc-security-code" class="required"><em>*</em><?php echo $this->__('Verification Code') ?></label><br />
+			<div class="input-box">
+				<input name="payment[cc_cid]" type="text" value="" id="cielo-dc-security-code" 
+					   title="<?php echo $this->__('Verification Code') ?>" class="input-text  required-entry" 
+					   style="width: 50px;" maxlength="4" onkeydown="return denyNotNumberDc(this, event);" autocomplete="off" />
+			</div>
+		</li>
+		<li>
+			<label for="cielo-dc-card_expiration-mh" class="required"><em>*</em><?php echo $this->__('Expiration Date') ?></label>
+			<div class="input-box">
+				<div class="v-fix">
+					<select id="cielo-dc-card_expiration-mh" name="payment[cc_exp_month]" class="month required-entry" autocomplete="off">
+						<option value="" selected="selected"><?php echo $this->__('Month') ?></option>
+						<?php foreach($this->getMonths() as $month): ?>
+						<option value="<?php echo $month['num'] ?>"><?php echo $month['label'] ?></option>
+						<?php endforeach ?>
+					</select>
+				</div>
+				<div class="v-fix">
+					<select id="cielo-dc-card_expiration-yr" name="payment[cc_exp_year]" class="year required-entry" autocomplete="off">
+						<option value="" selected="selected"><?php echo $this->__('Year') ?></option>
+						<?php foreach($this->getYears() as $year): ?>
+						<option value="<?php echo $year['num'] ?>"><?php echo $year['label'] ?></option>
+						<?php endforeach ?>
+					</select>
+				</div>
+			</div>
+			<li>
+				<label for="cielo-dc-card_owner" class="required"><em>*</em><?php echo $this->__('Name on Card') ?></label>
+				<div class="input-box">
+					<input type="text" title="<?php echo $this->__('Name on Card') ?>" class="input-text required-entry" id="cielo-dc-card_owner" name="payment[cc_owner]" value="" autocomplete="off" />
+					<input type="hidden" id="cielo-current-dc-type" value="" />
+				</div>
+			</li>
+		</li>
+<?php
+	}
+?>
+		<br />
+	</ul>
+</fieldset>
+<script type="text/javascript">// <![CDATA[
+
+	function denyNotNumberDc(field, event)
+	{
+        var keyCode = ('which' in event) ? event.which : event.keyCode;
+		
+		// teclas backspace e delete
+        if(keyCode == 8 || keyCode == 46)
+			return true;
+		
+		// tecla tab
+        if(keyCode == 9)
+			return true;
+		
+		// teclas <- e ->
+        if(keyCode == 37 || keyCode == 39)
+			return true;
+		
+		// teclas home e end
+        if(keyCode == 36 || keyCode == 35)
+			return true;
+		
+		// teclas numericas
+        if((keyCode >= 48 && keyCode <= 57) || (keyCode >= 96 && keyCode <= 105))
+			return true;
+        
+		return false;
+	}
+	
+	function cleanDcForm(cardType)
+	{
+<?php
+		if($this->getConfigData('buypage') == "loja")
+		{
+?>
+		var currentCcType = document.getElementById('cielo-current-dc-type').value;
+		document.getElementById('cielo-current-dc-type').value = cardType;
+		
+		if(currentCcType != cardType)
+		{
+			document.getElementById('cielo-dc-card-number').value = "";
+			document.getElementById('cielo-dc-security-code').value = "";
+			document.getElementById('cielo-dc-card_expiration-mh').value = "";
+			document.getElementById('cielo-dc-card_expiration-yr').value = "";
+			document.getElementById('cielo-dc-card_owner').value = "";
+		}
+<?php
+		}
+?>
+	}
+	
+// ]]></script>

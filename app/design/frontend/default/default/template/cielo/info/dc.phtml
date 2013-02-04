@@ -1,0 +1,62 @@
+<?php
+
+/*
+ * Maxima Cielo Module - payment method module for Magento, integrating
+ * the billing forms with a Cielo's gateway Web Service.
+ * Copyright (C) 2012  Fillipe Almeida Dutra
+ * Belo Horizonte, Minas Gerais - Brazil
+ * 
+ * Contact: lawsann@gmail.com
+ * Project link: http://code.google.com/p/magento-maxima-cielo/
+ * Group discussion: http://groups.google.com/group/cielo-magento
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+?>
+Cartão de Débito Cielo
+<br /><br />
+<?php
+	
+	
+	if($_info = $this->getInfo())
+	{
+		if($_info->getOrder())
+		{
+			$payment = $_info->getOrder()->getPayment();
+			
+			if($payment->getAdditionalInformation ('Cielo_error'))
+			{
+				echo "Erro na transação";
+			}
+			else
+			{
+				$tid = $payment->getAdditionalInformation ('Cielo_tid');
+				$status = $payment->getAdditionalInformation ('Cielo_status');
+				$cardType = $payment->getAdditionalInformation ('Cielo_cardType');
+				$installments = $payment->getAdditionalInformation ('Cielo_installments');
+				
+				$allCards = Mage::getModel('Maxima_Cielo/cc_types')->toArray();
+				$cardType = $allCards[$cardType];
+				$installments = ($installments == 1) ? '&#192; vista' : $installments . " vezes";
+				
+				$html = "<b>ID Transação</b>: " . $tid . "<br />";
+				$html .= "<b>Status</b>: " . Mage::helper('Maxima_Cielo')->getStatusMessage($status) . "<br />";
+				$html .= "<b>Bandeira</b>: " . $cardType;
+				
+				echo $html;
+			}
+		}
+	}
+?>
